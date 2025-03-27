@@ -7,17 +7,18 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace JWTAuthDotNet9.Services
 {
     public class AuthService(IConfiguration Configuration, UserDbContext context) : IAuthService
     {
-        public async Task<string?> LoginAsync(UserDto request)
+        public async Task<TokenResponseDto?> LoginAsync(UserDto request)
         {
 
             var user = await context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-            if (user is null )
+            if (user is null)
             {
                 return null;
             }
@@ -30,7 +31,17 @@ namespace JWTAuthDotNet9.Services
 
             // If login is successful, create a JWT token and return it
             //string token = CreateToken(user);
-            return CreateToken(user);
+           
+            return await CreateTokenResponse(user);
+        }
+
+        private async Task<TokenResponseDto> CreateTokenResponse(User user)
+        {
+            return new TokenResponseDto
+            {
+                AccessToken = CreateToken(user),
+                RefreshToken = await GenerateAndSaveRefreshTokenAsync(user)
+            };
         }
 
         public async Task<User?> RegisterAsync(UserDto request)
@@ -53,8 +64,47 @@ namespace JWTAuthDotNet9.Services
 
             // Return the user object after registration (simulated, usually you would save to a database)
             return user;
+
         }
 
+
+        public async Task<TokenResponseDto?> RefreshTokenAsync(RefreshTokenRequestDto request)
+        {
+            var user = await ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
+            if (user is null)
+            {
+                return null;
+            }
+           
+            return await CreateTokenResponse(user);
+        }
+        private async Task<User?>ValidateRefreshTokenAsync(Guid userId,  string refreshToken)
+        {
+            var user = await context.Users.FindAsync(userId);
+            if (user is null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
+            {
+                return null;
+            }
+            return user;
+        }
+
+       
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+        private async Task<string> GenerateAndSaveRefreshTokenAsync(User user)
+        {
+            var refreshToken = GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
+            await context.SaveChangesAsync();
+            return refreshToken;
+
+        }
         private string CreateToken(User user)
         {
             // Create a list of claims (key-value pairs representing the user's identity and roles)
@@ -84,5 +134,7 @@ namespace JWTAuthDotNet9.Services
             // Convert the JWT token to a string and return it and test that string using JWT.IO website
             return new JwtSecurityTokenHandler().WriteToken(tokenDescription);
         }
+
+       
     }
 }
