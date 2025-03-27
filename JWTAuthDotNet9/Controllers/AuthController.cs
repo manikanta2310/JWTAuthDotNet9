@@ -2,6 +2,7 @@
 using JWTAuthDotNet9.Entities;           // This imports the 'Entities' namespace where your User model or other entities are defined.
 using JWTAuthDotNet9.Model;              // This imports the 'Model' namespace which likely contains the 'UserDto' class or other data transfer objects.
 using JWTAuthDotNet9.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;    // Provides classes for identity management, like hashing passwords and verifying users.
 using Microsoft.AspNetCore.Mvc;         // Used for defining the controller and HTTP request/response actions in ASP.NET Core MVC.
 using Microsoft.IdentityModel.Tokens;   // Provides functionality to create and validate JWT tokens.
@@ -42,8 +43,14 @@ namespace JWTAuthDotNet9.Controllers
             return Ok(token);
 
         }
+        [Authorize]
+        [HttpGet]
+        public IActionResult AuthenticationOnlyEndpoint()
+        {
+            return Ok("You are authenticated!!!!!!!!!");
+        }
 
-        
-      
+
+
     }
 }
