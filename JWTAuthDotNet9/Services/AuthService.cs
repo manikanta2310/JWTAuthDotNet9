@@ -62,7 +62,8 @@ namespace JWTAuthDotNet9.Services
             {
                 // ClaimTypes.Name: Standard claim type for a user's name/username
                 new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
             // Retrieve the secret key from configuration settings (AppSettings)
