@@ -88,7 +88,7 @@ namespace JWTAuthDotNet9.Controllers
                 signingCredentials: creds // Signing credentials to validate the token
             );
 
-            // Convert the JWT token to a string and return it
+            // Convert the JWT token to a string and return it and test that string using JWT.IO website
             return new JwtSecurityTokenHandler().WriteToken(tokenDescription);
         }
     }
